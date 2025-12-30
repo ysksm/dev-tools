@@ -1,0 +1,45 @@
+erDiagram
+    UserStory ||..o| User : assigneeId
+    UserStory ||--|| User : reporterId
+    Todo ||--|| UserStory : userStoryId
+    Todo ||..o| User : assigneeId
+    User {
+        UserId id PK
+        string name
+        string email
+        string avatarUrl
+        Date createdAt
+        Date updatedAt
+    }
+    UserStory {
+        UserStoryId id PK
+        string title
+        string description
+        string[] acceptanceCriteria
+        UserStoryStatus status
+        UserStoryPriority priority
+        UserStoryCategory category
+        StoryPoints storyPoints
+        UserId assigneeId FK
+        UserId reporterId FK
+        string[] tags
+        Date createdAt
+        Date updatedAt
+        Date completedAt
+    }
+    Todo {
+        TodoId id PK
+        string title
+        string description
+        TodoStatus status
+        TodoPriority priority
+        UserStoryId userStoryId FK
+        UserId assigneeId FK
+        number estimatedMinutes
+        number actualMinutes
+        Date dueDate
+        number order
+        Date createdAt
+        Date updatedAt
+        Date completedAt
+    }
