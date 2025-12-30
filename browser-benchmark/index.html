@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browser Benchmark</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header class="header">
+        <h1>Browser Benchmark</h1>
+        <span class="version">v1.0</span>
+    </header>
+
+    <main class="main">
+        <!-- Control Panel -->
+        <section class="control-panel">
+            <div class="buttons">
+                <button id="btn-run-all" class="btn btn-primary">Run All</button>
+                <button id="btn-run-js" class="btn btn-secondary">JavaScript</button>
+                <button id="btn-run-dom" class="btn btn-secondary">DOM</button>
+                <button id="btn-run-render" class="btn btn-secondary">Rendering</button>
+            </div>
+            <div class="progress-container" id="progress-container">
+                <div class="progress-bar" id="progress-bar"></div>
+                <span class="progress-text" id="progress-text">Ready</span>
+            </div>
+        </section>
+
+        <!-- Score Display Area -->
+        <section class="score-section">
+            <div class="overall-score-card">
+                <h2>Overall Score</h2>
+                <div class="score-display">
+                    <span class="score-value" id="overall-score">---</span>
+                    <span class="score-grade" id="overall-grade">-</span>
+                </div>
+            </div>
+            <div class="chart-container">
+                <h3>Category Scores</h3>
+                <canvas id="bar-chart"></canvas>
+            </div>
+        </section>
+
+        <!-- Radar Chart -->
+        <section class="charts-section">
+            <div class="chart-card">
+                <h3>Performance Overview</h3>
+                <canvas id="radar-chart"></canvas>
+            </div>
+        </section>
+
+        <!-- Results Table -->
+        <section class="results-section">
+            <h3>Detailed Results</h3>
+            <div class="table-container">
+                <table id="results-table">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Test</th>
+                            <th>Time (ms)</th>
+                            <th>Score</th>
+                            <th>Grade</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Hidden container for DOM benchmarks -->
+        <div id="benchmark-container" aria-hidden="true"></div>
+    </main>
+
+    <footer class="footer">
+        <span id="browser-info">Loading browser info...</span>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="js/utils/timer.js"></script>
+    <script src="js/utils/statistics.js"></script>
+    <script src="js/utils/scoring.js"></script>
+    <script src="js/benchmarks/javascript.js"></script>
+    <script src="js/benchmarks/dom.js"></script>
+    <script src="js/benchmarks/rendering.js"></script>
+    <script src="js/benchmarks/comprehensive.js"></script>
+    <script src="js/ui/progress.js"></script>
+    <script src="js/ui/chart.js"></script>
+    <script src="js/ui/results.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
