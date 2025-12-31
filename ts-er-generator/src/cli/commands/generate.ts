@@ -5,8 +5,9 @@ import * as path from 'path';
 import { TscParser } from '../../core/parser/tsc/TscParser.ts';
 import { MermaidGenerator, type MermaidOptions } from '../../core/generator/MermaidGenerator.ts';
 import { D2Generator, type D2Options } from '../../core/generator/D2Generator.ts';
+import { DrawioGenerator, type DrawioOptions } from '../../core/generator/DrawioGenerator.ts';
 
-type OutputFormat = 'mermaid' | 'd2';
+type OutputFormat = 'mermaid' | 'd2' | 'drawio';
 
 interface GenerateOptions {
   output?: string;
@@ -22,7 +23,7 @@ export const generateCommand = new Command('generate')
   .description('Generate ER diagram from TypeScript files')
   .argument('<patterns...>', 'Glob patterns for TypeScript files')
   .option('-o, --output <file>', 'Output file path (default: stdout)')
-  .option('-f, --format <format>', 'Output format: mermaid, d2 (default: mermaid)', 'mermaid')
+  .option('-f, --format <format>', 'Output format: mermaid, d2, drawio (default: mermaid)', 'mermaid')
   .option('--no-properties', 'Hide entity properties')
   .option('--no-keys', 'Hide key type markers (PK, FK, UK)')
   .option('--comments', 'Show JSDoc comments')
@@ -63,6 +64,12 @@ export const generateCommand = new Command('generate')
           direction: (options.direction as D2Options['direction']) || 'right',
         };
         const generator = new D2Generator(d2Options);
+        output = generator.generate(diagram);
+      } else if (format === 'drawio') {
+        const drawioOptions: DrawioOptions = {
+          showKeyTypes: options.noKeys !== true,
+        };
+        const generator = new DrawioGenerator(drawioOptions);
         output = generator.generate(diagram);
       } else {
         const mermaidOptions: MermaidOptions = {
