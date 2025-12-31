@@ -4,23 +4,30 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { TscParser } from '../../core/parser/tsc/TscParser.ts';
 import { MermaidGenerator, type MermaidOptions } from '../../core/generator/MermaidGenerator.ts';
+import { D2Generator, type D2Options } from '../../core/generator/D2Generator.ts';
+
+type OutputFormat = 'mermaid' | 'd2';
 
 interface GenerateOptions {
   output?: string;
+  format?: OutputFormat;
   noProperties?: boolean;
   noComments?: boolean;
   noKeys?: boolean;
+  direction?: 'd2';
 }
 
 export const generateCommand = new Command('generate')
   .alias('g')
-  .description('Generate Mermaid ER diagram from TypeScript files')
+  .description('Generate ER diagram from TypeScript files')
   .argument('<patterns...>', 'Glob patterns for TypeScript files')
   .option('-o, --output <file>', 'Output file path (default: stdout)')
+  .option('-f, --format <format>', 'Output format: mermaid, d2 (default: mermaid)', 'mermaid')
   .option('--no-properties', 'Hide entity properties')
   .option('--no-keys', 'Hide key type markers (PK, FK, UK)')
   .option('--comments', 'Show JSDoc comments')
-  .action(async (patterns: string[], options: GenerateOptions & { comments?: boolean }) => {
+  .option('--direction <dir>', 'D2 direction: right, down, left, up (default: right)')
+  .action(async (patterns: string[], options: GenerateOptions & { comments?: boolean; direction?: string }) => {
     try {
       // Find matching files
       const files: string[] = [];
@@ -45,23 +52,35 @@ export const generateCommand = new Command('generate')
 
       console.error(`Extracted ${diagram.entities.length} entities, ${diagram.relationships.length} relationships`);
 
-      // Generate Mermaid
-      const mermaidOptions: MermaidOptions = {
-        showProperties: options.noProperties !== true,
-        showComments: options.comments === true,
-        showKeyTypes: options.noKeys !== true,
-      };
+      // Generate output based on format
+      const format = (options.format || 'mermaid') as OutputFormat;
+      let output: string;
 
-      const generator = new MermaidGenerator(mermaidOptions);
-      const mermaid = generator.generate(diagram);
+      if (format === 'd2') {
+        const d2Options: D2Options = {
+          showProperties: options.noProperties !== true,
+          showConstraints: options.noKeys !== true,
+          direction: (options.direction as D2Options['direction']) || 'right',
+        };
+        const generator = new D2Generator(d2Options);
+        output = generator.generate(diagram);
+      } else {
+        const mermaidOptions: MermaidOptions = {
+          showProperties: options.noProperties !== true,
+          showComments: options.comments === true,
+          showKeyTypes: options.noKeys !== true,
+        };
+        const generator = new MermaidGenerator(mermaidOptions);
+        output = generator.generate(diagram);
+      }
 
       // Output
       if (options.output) {
         const outputPath = path.resolve(options.output);
-        await fs.writeFile(outputPath, mermaid, 'utf-8');
+        await fs.writeFile(outputPath, output, 'utf-8');
         console.error(`Generated: ${outputPath}`);
       } else {
-        console.log(mermaid);
+        console.log(output);
       }
     } catch (error) {
       console.error('Error:', error instanceof Error ? error.message : error);

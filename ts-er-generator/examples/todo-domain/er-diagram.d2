@@ -1,0 +1,52 @@
+direction: right
+
+User: {
+  shape: sql_table
+  id: UserId {constraint: primary_key}
+  name: string
+  email: string
+  avatarUrl: string?
+  createdAt: Date
+  updatedAt: Date
+}
+
+UserStory: {
+  shape: sql_table
+  id: UserStoryId {constraint: primary_key}
+  title: string
+  description: string
+  acceptanceCriteria: string[]
+  status: UserStoryStatus
+  priority: UserStoryPriority
+  category: UserStoryCategory
+  storyPoints: StoryPoints?
+  assigneeId: UserId? {constraint: foreign_key}
+  reporterId: UserId {constraint: foreign_key}
+  tags: string[]
+  createdAt: Date
+  updatedAt: Date
+  completedAt: Date?
+}
+
+Todo: {
+  shape: sql_table
+  id: TodoId {constraint: primary_key}
+  title: string
+  description: string?
+  status: TodoStatus
+  priority: TodoPriority
+  userStoryId: UserStoryId {constraint: foreign_key}
+  assigneeId: UserId? {constraint: foreign_key}
+  estimatedMinutes: number?
+  actualMinutes: number?
+  dueDate: Date?
+  order: number
+  createdAt: Date
+  updatedAt: Date
+  completedAt: Date?
+}
+
+UserStory -> User: assigneeId
+UserStory -> User: reporterId
+Todo -> UserStory: userStoryId
+Todo -> User: assigneeId
