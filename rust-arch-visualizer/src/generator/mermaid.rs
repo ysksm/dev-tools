@@ -148,6 +148,9 @@ impl MermaidGenerator {
         output.push_str("C4Component\n");
         output.push_str(&format!("title Component Diagram for {}\n\n", analysis.name));
 
+        // Collect all valid component IDs
+        let mut valid_ids: HashSet<String> = HashSet::new();
+
         // Group by module (as containers)
         let mut module_components: std::collections::HashMap<String, Vec<String>> = std::collections::HashMap::new();
 
@@ -155,6 +158,7 @@ impl MermaidGenerator {
         for (full_name, struct_def) in &analysis.structs {
             let module = self.get_parent_module(full_name);
             let component_id = self.sanitize_id(full_name);
+            valid_ids.insert(component_id.clone());
             let description = format!("Struct with {} fields", struct_def.fields.len());
             let component = format!(
                 "Component({}, \"{}\", \"Struct\", \"{}\")\n",
@@ -167,6 +171,7 @@ impl MermaidGenerator {
         for (full_name, trait_def) in &analysis.traits {
             let module = self.get_parent_module(full_name);
             let component_id = self.sanitize_id(full_name);
+            valid_ids.insert(component_id.clone());
             let description = format!("Trait with {} methods", trait_def.methods.len());
             let component = format!(
                 "Component({}, \"{}\", \"Trait\", \"{}\")\n",
@@ -179,6 +184,7 @@ impl MermaidGenerator {
         for (full_name, enum_def) in &analysis.enums {
             let module = self.get_parent_module(full_name);
             let component_id = self.sanitize_id(full_name);
+            valid_ids.insert(component_id.clone());
             let description = format!("Enum with {} variants", enum_def.variants.len());
             let component = format!(
                 "Component({}, \"{}\", \"Enum\", \"{}\")\n",
@@ -201,13 +207,18 @@ impl MermaidGenerator {
             output.push_str("}\n\n");
         }
 
-        // Add relationships
+        // Add relationships (only between components defined in this diagram)
         let mut seen: HashSet<String> = HashSet::new();
         for rel in &analysis.relationships {
             let from_id = self.sanitize_id(&rel.from);
             let to_id = self.sanitize_id(&rel.to);
-            let key = format!("{}-{}", from_id, to_id);
 
+            // Skip if either ID is not a valid component in this diagram
+            if !valid_ids.contains(&from_id) || !valid_ids.contains(&to_id) {
+                continue;
+            }
+
+            let key = format!("{}-{}", from_id, to_id);
             if seen.contains(&key) || from_id == to_id {
                 continue;
             }
