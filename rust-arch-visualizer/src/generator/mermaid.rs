@@ -146,7 +146,7 @@ impl MermaidGenerator {
     pub fn generate_c4_component(&self, analysis: &CrateAnalysis) -> String {
         let mut output = String::new();
         output.push_str("C4Component\n");
-        output.push_str(&format!("{}title Component Diagram for {}\n\n", self.indent, analysis.name));
+        output.push_str(&format!("title Component Diagram for {}\n\n", analysis.name));
 
         // Group by module (as containers)
         let mut module_components: std::collections::HashMap<String, Vec<String>> = std::collections::HashMap::new();
@@ -157,8 +157,8 @@ impl MermaidGenerator {
             let component_id = self.sanitize_id(full_name);
             let description = format!("Struct with {} fields", struct_def.fields.len());
             let component = format!(
-                "{}Component({}, \"{}\", \"Struct\", \"{}\")\n",
-                self.indent, component_id, struct_def.name, description
+                "Component({}, \"{}\", \"Struct\", \"{}\")\n",
+                component_id, struct_def.name, description
             );
             module_components.entry(module).or_default().push(component);
         }
@@ -169,8 +169,8 @@ impl MermaidGenerator {
             let component_id = self.sanitize_id(full_name);
             let description = format!("Trait with {} methods", trait_def.methods.len());
             let component = format!(
-                "{}Component({}, \"{}\", \"Trait\", \"{}\")\n",
-                self.indent, component_id, trait_def.name, description
+                "Component({}, \"{}\", \"Trait\", \"{}\")\n",
+                component_id, trait_def.name, description
             );
             module_components.entry(module).or_default().push(component);
         }
@@ -181,8 +181,8 @@ impl MermaidGenerator {
             let component_id = self.sanitize_id(full_name);
             let description = format!("Enum with {} variants", enum_def.variants.len());
             let component = format!(
-                "{}Component({}, \"{}\", \"Enum\", \"{}\")\n",
-                self.indent, component_id, enum_def.name, description
+                "Component({}, \"{}\", \"Enum\", \"{}\")\n",
+                component_id, enum_def.name, description
             );
             module_components.entry(module).or_default().push(component);
         }
@@ -192,13 +192,13 @@ impl MermaidGenerator {
             let container_id = self.sanitize_id(module);
             let short_name = module.split("::").last().unwrap_or(module);
             output.push_str(&format!(
-                "{}Container_Boundary({}, \"{}\") {{\n",
-                self.indent, container_id, short_name
+                "Container_Boundary({}, \"{}\") {{\n",
+                container_id, short_name
             ));
             for component in components {
-                output.push_str(&format!("    {}", component));
+                output.push_str(&format!("  {}", component));
             }
-            output.push_str(&format!("{}}}\n\n", self.indent));
+            output.push_str("}\n\n");
         }
 
         // Add relationships
@@ -221,8 +221,8 @@ impl MermaidGenerator {
             };
 
             output.push_str(&format!(
-                "{}Rel({}, {}, \"{}\")\n",
-                self.indent, from_id, to_id, label
+                "Rel({}, {}, \"{}\")\n",
+                from_id, to_id, label
             ));
         }
 
@@ -233,7 +233,7 @@ impl MermaidGenerator {
     pub fn generate_c4_container(&self, analysis: &CrateAnalysis) -> String {
         let mut output = String::new();
         output.push_str("C4Container\n");
-        output.push_str(&format!("{}title Container Diagram for {}\n\n", self.indent, analysis.name));
+        output.push_str(&format!("title Container Diagram for {}\n\n", analysis.name));
 
         // Collect unique modules
         let mut modules: HashSet<String> = HashSet::new();
@@ -289,8 +289,8 @@ impl MermaidGenerator {
             };
 
             output.push_str(&format!(
-                "{}Container({}, \"{}\", \"{}\", \"{}\")\n",
-                self.indent, container_id, short_name, tech, description
+                "Container({}, \"{}\", \"{}\", \"{}\")\n",
+                container_id, short_name, tech, description
             ));
         }
 
@@ -319,8 +319,8 @@ impl MermaidGenerator {
             seen.insert((from_id.clone(), to_id.clone()));
 
             output.push_str(&format!(
-                "{}Rel({}, {}, \"uses\")\n",
-                self.indent, from_id, to_id
+                "Rel({}, {}, \"uses\")\n",
+                from_id, to_id
             ));
         }
 
@@ -350,8 +350,8 @@ impl MermaidGenerator {
             seen.insert((from_id.clone(), to_id.clone()));
 
             output.push_str(&format!(
-                "{}Rel({}, {}, \"uses\")\n",
-                self.indent, from_id, to_id
+                "Rel({}, {}, \"uses\")\n",
+                from_id, to_id
             ));
         }
 
@@ -624,6 +624,7 @@ impl MermaidGenerator {
 
     fn sanitize_id(&self, name: &str) -> String {
         name.replace("::", "_")
+            .replace('-', "_")
             .replace(['<', '>', '(', ')', '[', ']', ',', ' ', '&', '*', '\''], "_")
             .replace("__", "_")
             .trim_matches('_')
