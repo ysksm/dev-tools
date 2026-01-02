@@ -197,6 +197,10 @@ pub enum DiagramType {
     Module,
     /// Function call graph
     CallGraph,
+    /// C4 Component diagram
+    C4Component,
+    /// C4 Container diagram (higher level view)
+    C4Container,
     /// All diagrams combined
     Full,
 }

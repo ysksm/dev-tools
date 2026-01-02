@@ -196,6 +196,22 @@ fn generate_diagram(
                 format!("```mermaid\n{}```\n", content)
             }
         }
+        DiagramType::C4Component => {
+            let content = generator.generate_c4_component(analysis);
+            if raw {
+                content
+            } else {
+                format!("```mermaid\n{}```\n", content)
+            }
+        }
+        DiagramType::C4Container => {
+            let content = generator.generate_c4_container(analysis);
+            if raw {
+                content
+            } else {
+                format!("```mermaid\n{}```\n", content)
+            }
+        }
         DiagramType::Full => generator.generate_full_diagram(analysis),
     }
 }

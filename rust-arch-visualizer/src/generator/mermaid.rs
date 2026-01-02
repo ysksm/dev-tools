@@ -142,11 +142,245 @@ impl MermaidGenerator {
         output
     }
 
+    /// Generate a C4 Component diagram
+    pub fn generate_c4_component(&self, analysis: &CrateAnalysis) -> String {
+        let mut output = String::new();
+        output.push_str("C4Component\n");
+        output.push_str(&format!("{}title Component Diagram for {}\n\n", self.indent, analysis.name));
+
+        // Group by module (as containers)
+        let mut module_components: std::collections::HashMap<String, Vec<String>> = std::collections::HashMap::new();
+
+        // Add structs as components
+        for (full_name, struct_def) in &analysis.structs {
+            let module = self.get_parent_module(full_name);
+            let component_id = self.sanitize_id(full_name);
+            let description = format!("Struct with {} fields", struct_def.fields.len());
+            let component = format!(
+                "{}Component({}, \"{}\", \"Struct\", \"{}\")\n",
+                self.indent, component_id, struct_def.name, description
+            );
+            module_components.entry(module).or_default().push(component);
+        }
+
+        // Add traits as components
+        for (full_name, trait_def) in &analysis.traits {
+            let module = self.get_parent_module(full_name);
+            let component_id = self.sanitize_id(full_name);
+            let description = format!("Trait with {} methods", trait_def.methods.len());
+            let component = format!(
+                "{}Component({}, \"{}\", \"Trait\", \"{}\")\n",
+                self.indent, component_id, trait_def.name, description
+            );
+            module_components.entry(module).or_default().push(component);
+        }
+
+        // Add enums as components
+        for (full_name, enum_def) in &analysis.enums {
+            let module = self.get_parent_module(full_name);
+            let component_id = self.sanitize_id(full_name);
+            let description = format!("Enum with {} variants", enum_def.variants.len());
+            let component = format!(
+                "{}Component({}, \"{}\", \"Enum\", \"{}\")\n",
+                self.indent, component_id, enum_def.name, description
+            );
+            module_components.entry(module).or_default().push(component);
+        }
+
+        // Output containers with their components
+        for (module, components) in &module_components {
+            let container_id = self.sanitize_id(module);
+            let short_name = module.split("::").last().unwrap_or(module);
+            output.push_str(&format!(
+                "{}Container_Boundary({}, \"{}\") {{\n",
+                self.indent, container_id, short_name
+            ));
+            for component in components {
+                output.push_str(&format!("    {}", component));
+            }
+            output.push_str(&format!("{}}}\n\n", self.indent));
+        }
+
+        // Add relationships
+        let mut seen: HashSet<String> = HashSet::new();
+        for rel in &analysis.relationships {
+            let from_id = self.sanitize_id(&rel.from);
+            let to_id = self.sanitize_id(&rel.to);
+            let key = format!("{}-{}", from_id, to_id);
+
+            if seen.contains(&key) || from_id == to_id {
+                continue;
+            }
+            seen.insert(key);
+
+            let label = match rel.relation_type {
+                RelationType::Implements => "implements",
+                RelationType::Contains => "contains",
+                RelationType::Extends => "extends",
+                _ => continue,
+            };
+
+            output.push_str(&format!(
+                "{}Rel({}, {}, \"{}\")\n",
+                self.indent, from_id, to_id, label
+            ));
+        }
+
+        output
+    }
+
+    /// Generate a C4 Container diagram (higher-level view)
+    pub fn generate_c4_container(&self, analysis: &CrateAnalysis) -> String {
+        let mut output = String::new();
+        output.push_str("C4Container\n");
+        output.push_str(&format!("{}title Container Diagram for {}\n\n", self.indent, analysis.name));
+
+        // Collect unique modules
+        let mut modules: HashSet<String> = HashSet::new();
+        for full_name in analysis.structs.keys() {
+            modules.insert(self.get_parent_module(full_name));
+        }
+        for full_name in analysis.enums.keys() {
+            modules.insert(self.get_parent_module(full_name));
+        }
+        for full_name in analysis.traits.keys() {
+            modules.insert(self.get_parent_module(full_name));
+        }
+
+        // Count items per module
+        let mut module_stats: std::collections::HashMap<String, (usize, usize, usize)> = std::collections::HashMap::new();
+        for full_name in analysis.structs.keys() {
+            let module = self.get_parent_module(full_name);
+            let entry = module_stats.entry(module).or_insert((0, 0, 0));
+            entry.0 += 1;
+        }
+        for full_name in analysis.enums.keys() {
+            let module = self.get_parent_module(full_name);
+            let entry = module_stats.entry(module).or_insert((0, 0, 0));
+            entry.1 += 1;
+        }
+        for full_name in analysis.traits.keys() {
+            let module = self.get_parent_module(full_name);
+            let entry = module_stats.entry(module).or_insert((0, 0, 0));
+            entry.2 += 1;
+        }
+
+        // Generate containers for each module
+        for module in &modules {
+            if module.is_empty() {
+                continue;
+            }
+            let container_id = self.sanitize_id(module);
+            let short_name = module.split("::").last().unwrap_or(module);
+            let stats = module_stats.get(module).unwrap_or(&(0, 0, 0));
+            let description = format!("{} structs, {} enums, {} traits", stats.0, stats.1, stats.2);
+
+            // Determine technology based on module name
+            let tech = if short_name.contains("service") {
+                "Service Layer"
+            } else if short_name.contains("repository") || short_name.contains("repo") {
+                "Repository Layer"
+            } else if short_name.contains("domain") || short_name.contains("entity") || short_name.contains("model") {
+                "Domain Layer"
+            } else if short_name.contains("api") || short_name.contains("handler") {
+                "API Layer"
+            } else {
+                "Rust Module"
+            };
+
+            output.push_str(&format!(
+                "{}Container({}, \"{}\", \"{}\", \"{}\")\n",
+                self.indent, container_id, short_name, tech, description
+            ));
+        }
+
+        output.push('\n');
+
+        // Add module dependencies
+        let mut seen: HashSet<(String, String)> = HashSet::new();
+        for rel in &analysis.relationships {
+            if rel.relation_type != RelationType::DependsOn {
+                continue;
+            }
+
+            let from_module = &rel.from;
+            let to_module = &rel.to;
+
+            if !modules.contains(from_module) || !modules.contains(to_module) {
+                continue;
+            }
+
+            let from_id = self.sanitize_id(from_module);
+            let to_id = self.sanitize_id(to_module);
+
+            if seen.contains(&(from_id.clone(), to_id.clone())) || from_id == to_id {
+                continue;
+            }
+            seen.insert((from_id.clone(), to_id.clone()));
+
+            output.push_str(&format!(
+                "{}Rel({}, {}, \"uses\")\n",
+                self.indent, from_id, to_id
+            ));
+        }
+
+        // Infer dependencies from type references
+        for rel in &analysis.relationships {
+            if rel.relation_type != RelationType::Contains && rel.relation_type != RelationType::Implements {
+                continue;
+            }
+
+            let from_module = self.get_parent_module(&rel.from);
+            let to_module = self.get_parent_module(&rel.to);
+
+            if from_module.is_empty() || to_module.is_empty() || from_module == to_module {
+                continue;
+            }
+
+            if !modules.contains(&from_module) || !modules.contains(&to_module) {
+                continue;
+            }
+
+            let from_id = self.sanitize_id(&from_module);
+            let to_id = self.sanitize_id(&to_module);
+
+            if seen.contains(&(from_id.clone(), to_id.clone())) {
+                continue;
+            }
+            seen.insert((from_id.clone(), to_id.clone()));
+
+            output.push_str(&format!(
+                "{}Rel({}, {}, \"uses\")\n",
+                self.indent, from_id, to_id
+            ));
+        }
+
+        output
+    }
+
+    fn get_parent_module(&self, full_name: &str) -> String {
+        if let Some(pos) = full_name.rfind("::") {
+            full_name[..pos].to_string()
+        } else {
+            String::new()
+        }
+    }
+
     /// Generate a full diagram combining all views
     pub fn generate_full_diagram(&self, analysis: &CrateAnalysis) -> String {
         let mut output = String::new();
 
         output.push_str("# Rust Architecture Diagram\n\n");
+
+        output.push_str("## C4 Container Diagram\n\n");
+        output.push_str("```mermaid\n");
+        output.push_str(&self.generate_c4_container(analysis));
+        output.push_str("```\n\n");
+
+        output.push_str("## C4 Component Diagram\n\n");
+        output.push_str("```mermaid\n");
+        output.push_str(&self.generate_c4_component(analysis));
+        output.push_str("```\n\n");
 
         output.push_str("## Class Diagram\n\n");
         output.push_str("```mermaid\n");
