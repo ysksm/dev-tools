@@ -1,0 +1,36 @@
+[package]
+name = "rust-arch-visualizer"
+version = "0.1.0"
+edition = "2021"
+description = "A CLI tool to visualize Rust architecture including traits, structs, modules, and their relationships"
+license = "MIT"
+repository = "https://github.com/ysksm/dev-tools"
+keywords = ["rust", "visualization", "architecture", "mermaid", "diagram"]
+categories = ["development-tools", "visualization"]
+
+[dependencies]
+# Rust syntax parsing
+syn = { version = "2.0", features = ["full", "parsing", "visit"] }
+quote = "1.0"
+proc-macro2 = "1.0"
+
+# CLI
+clap = { version = "4.4", features = ["derive"] }
+
+# File system
+walkdir = "2.4"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+[dev-dependencies]
+tempfile = "3.10"
+
+[[bin]]
+name = "rust-arch"
+path = "src/main.rs"
