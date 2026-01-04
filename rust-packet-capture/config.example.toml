@@ -1,0 +1,33 @@
+# Packet Capture Configuration File
+# All fields are optional. CLI arguments will override these values.
+
+# Network interface to capture packets from (e.g., "eth0", "wlan0")
+# Use `packet-capture -l` to list available interfaces
+# interface = "eth0"
+
+# Protocol to filter: "tcp", "udp", "icmp", or "all"
+protocol = "all"
+
+# Port number to filter (applies to TCP/UDP)
+# Example: capture only HTTP traffic
+# port = 80
+
+# Source IP address to filter
+# Example: capture packets from a specific host
+# source = "192.168.1.100"
+
+# Destination IP address to filter
+# Example: capture packets to a specific host
+# destination = "10.0.0.1"
+
+# Output file path for captured packets (PCAP format)
+# Can be opened with Wireshark or other network analyzers
+output = "capture.pcap"
+
+# Maximum number of packets to capture (0 for unlimited)
+# Useful for capturing a specific number of packets
+max_packets = 0
+
+# Enable verbose output
+# Shows detailed information for each captured packet
+verbose = false
